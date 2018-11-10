@@ -19,7 +19,7 @@ namespace Autodesk.Forge.ARKit {
 		protected bool _explodeActivated = false;
 		protected static float _explodeSpeed = 80f;
 		protected static float _explodeTarget = 1f;
-
+		protected float _previousExplodeAmount;
 		#endregion
 
 		#region Unity APIs
@@ -27,7 +27,6 @@ namespace Autodesk.Forge.ARKit {
 			InitExplodeEngine (gameObject) ;
 			//Explode () ;
 		}
-
 		#endregion
 
 		#region Methods
@@ -37,13 +36,22 @@ namespace Autodesk.Forge.ARKit {
 
 		public bool isExploded { get { return (_explodeActivated) ; } }
 
-		public void Explode () {
-			if ( _explodeActivated )
+		public void Explode()
+		{
+			if (_explodeActivated)
 				return;
-			_explodeTarget =0.75f ; // 1f ;
-			_explodeActivated =true ;
-			_explode.explode (_explodeTarget) ;
+
+			_explodeTarget = .75f; // 1f ;
+			_explodeActivated = true;
+			_explode.explode(_explodeTarget);
 			//StartCoroutine (AnimationNumber.Instance.Animate (_explode, _explode._scale, 1f, 5f)) ;
+		}
+
+		public void ExplodeRange (float amount) {
+			_explodeActivated = amount != 0;
+			_explodeTarget = amount - _previousExplodeAmount;
+			_explode.explode (_explodeTarget) ;
+			_previousExplodeAmount = amount;
 		}
 
 		public void Combine () {

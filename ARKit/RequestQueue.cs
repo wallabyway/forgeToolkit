@@ -146,6 +146,7 @@ namespace Autodesk.Forge.ARKit {
 		public virtual void FireRequest (Action<object, AsyncCompletedEventArgs> callback = null) {
 			emitted = DateTime.Now;
 			try {
+				System.Net.ServicePointManager.SecurityProtocol = System.Net.SecurityProtocolType.Tls12;
 				using ( client = new WebClient () ) {
 					//client.Headers.Add ("Connection", "keep-alive") ;
 					if ( callback != null )
@@ -175,6 +176,7 @@ namespace Autodesk.Forge.ARKit {
 
 		public virtual IEnumerator _FireRequest_ (Action<object, AsyncCompletedEventArgs> callback =null) {
 			//using ( client =new UnityWebRequest (uri.AbsoluteUri) ) {
+			System.Net.ServicePointManager.SecurityProtocol = System.Net.SecurityProtocolType.Tls12;
 			using ( client =UnityWebRequest.Get (uri.AbsoluteUri) ) {
 				//client.SetRequestHeader ("Connection", "keep-alive") ;
 				//client.method =UnityWebRequest.kHttpVerbGET ;
@@ -284,6 +286,7 @@ namespace Autodesk.Forge.ARKit {
 
 		#region Fields
 		protected List<IRequestInterface> _queue = new List<IRequestInterface> ();
+		public HashSet<int> _materials = new HashSet<int> ();
 
 		#endregion
 

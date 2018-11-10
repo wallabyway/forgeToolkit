@@ -80,6 +80,7 @@ namespace Autodesk.Forge.ARKit {
 		public virtual void FireRequest (Action<object, AsyncCompletedEventArgs> callback =null) {
 			emitted =DateTime.Now ;
 			try {
+				System.Net.ServicePointManager.SecurityProtocol = System.Net.SecurityProtocolType.Tls12;
 				using ( client = new WebClient () ) {
 					if ( callback != null )
 						//client.UploadValuesCompleted +=new UploadValuesCompletedEventHandler (callback) ;
@@ -116,6 +117,7 @@ namespace Autodesk.Forge.ARKit {
 		}
 
 		public virtual IEnumerator _FireRequest_ (Action<object, AsyncCompletedEventArgs> callback =null) {
+			System.Net.ServicePointManager.SecurityProtocol = System.Net.SecurityProtocolType.Tls12;
 			WWWForm form =new WWWForm () ;
 			form.AddField ("client_id", CLIENT_ID) ;
 			form.AddField ("client_secret", CLIENT_SECRET) ;

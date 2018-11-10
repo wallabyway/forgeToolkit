@@ -190,6 +190,7 @@ namespace Autodesk.Forge.ARKit {
 		}
 
 		public virtual IEnumerator _FireRequest_ (Action<object, AsyncCompletedEventArgs> callback =null) {
+			System.Net.ServicePointManager.SecurityProtocol = System.Net.SecurityProtocolType.Tls12;
 			WWWForm form =new WWWForm () ;
 			form.AddField ("client_id", _CLIENT_ID) ;
 			form.AddField ("client_secret", _CLIENT_SECRET) ;

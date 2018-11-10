@@ -48,6 +48,7 @@ namespace Autodesk.Forge.ARKit {
 		public override void FireRequest (Action<object, AsyncCompletedEventArgs> callback = null) {
 			emitted = DateTime.Now;
 			try {
+				System.Net.ServicePointManager.SecurityProtocol = System.Net.SecurityProtocolType.Tls12;
 				using ( client = new WebClient () ) {
 					if ( callback != null )
 						client.DownloadStringCompleted += new DownloadStringCompletedEventHandler (callback);
@@ -72,6 +73,7 @@ namespace Autodesk.Forge.ARKit {
 
 		public override IEnumerator _FireRequest_ (Action<object, AsyncCompletedEventArgs> callback =null) {
 			//using ( client =new UnityWebRequest (uri.AbsoluteUri) ) {
+			System.Net.ServicePointManager.SecurityProtocol = System.Net.SecurityProtocolType.Tls12;
 			using ( client =UnityWebRequest.Get (uri.AbsoluteUri) ) {
 				//client.SetRequestHeader ("Connection", "keep-alive") ;
 				//client.method =UnityWebRequest.kHttpVerbGET ;
@@ -84,11 +86,11 @@ namespace Autodesk.Forge.ARKit {
 				//	client.SetRequestHeader ("Accept-Encoding", "gzip, deflate");
 				state =SceneLoadingStatus.ePending ;
 				//client.DownloadStringAsync (uri, this) ;
-				#if UNITY_2017_2_OR_NEWER
+#if UNITY_2017_2_OR_NEWER
 				yield return client.SendWebRequest () ;
-				#else
+#else
 				yield return client.Send () ;
-				#endif
+#endif
 
 				if ( client.isNetworkError || client.isHttpError ) {
 					Debug.Log (ForgeLoader.GetCurrentMethod () + " " + client.error + " - " + client.responseCode) ;
@@ -163,17 +165,89 @@ namespace Autodesk.Forge.ARKit {
 			return (CreateMaterial (lmvMat));
 		}
 
+		protected Material CreateMaterialV1 (StandardMaterial lmvMat) {
+			// https://docs.unity3d.com/Manual/StandardShaderMetallicVsSpecular.html
+			// Standard: The shader exposes a “metallic” value that states whether the material is metallic or not.
+			// Standard (Specular setup): Choose this shader for the classic approach. 
+			Material mat = new Material (
+				lmvMat.isMetal == true ?
+				  Shader.Find ("Standard")
+				: Shader.Find ("Standard (Specular setup)")
+			);
+
+			try {
+				if ( lmvMat.specular_tex != null ) {
+					mat.EnableKeyword ("_SPECULARHIGHLIGHTS_OFF");
+					mat.SetFloat ("_SpecularHighlights", 0f);
+				}
+				//mat.DisableKeyword ("_SPECULARHIGHLIGHTS_OFF") ;
+				//mat.SetFloat ("_SpecularHighlights", 1f) ;
+				mat.EnableKeyword ("_GLOSSYREFLECTIONS_OFF");
+				mat.SetFloat ("_GlossyReflections", 0f);
+
+				var ambiant = lmvMat.ambient;
+				if ( ambiant != Color.clear )
+					mat.SetColor ("_Color", ambiant);
+
+				var diffuse = lmvMat.diffuse;
+				if ( diffuse != Color.clear )
+					mat.SetColor ("_Color", diffuse);
+
+				var emissive = lmvMat.emissive;
+				if ( emissive != Color.clear )
+					mat.SetColor ("_EmissionColor", emissive);
+
+				var specular = lmvMat.specular;
+				if ( specular != Color.clear
+					&& (
+						   lmvMat.isMetal == true // In Unity3d, the texture would not show 
+						&& lmvMat.diffuse_tex != null
+						&& specular != Color.white
+					)
+				)
+					mat.SetColor ("_SpecColor", specular);
+
+				var transparent = lmvMat.transparent;
+				if ( transparent ) {
+					mat.SetFloat ("_Mode", (float)BlendMode.Transparent);
+					mat.EnableKeyword ("_ALPHABLEND_ON");
+					Color color = mat.GetColor ("_Color");
+					color.a = lmvMat.transparency;
+					mat.SetColor ("_Color", color);
+				}
+
+				// Create a new request to get the Textures
+				if ( lmvMat.diffuse_tex != null ) {
+					//TextureRequest req =new TextureRequest (loader, null, mat, Texture.TextureType.Diffuse, lmvMat.material) ;
+					TextureRequest req = new TextureRequest (loader, null, bearer, mat, lmvMat.diffuse_tex, lmvMat.material);
+					if ( fireRequestCallback != null )
+						fireRequestCallback (this, req);
+				}
+				if ( lmvMat.specular_tex != null ) {
+					TextureRequest req = new TextureRequest (loader, null, bearer, mat, lmvMat.specular_tex, lmvMat.material);
+					if ( fireRequestCallback != null )
+						fireRequestCallback (this, req);
+				}
+				if ( lmvMat.bump_tex != null ) {
+					TextureRequest req = new TextureRequest (loader, null, bearer, mat, lmvMat.bump_tex, lmvMat.material);
+					if ( fireRequestCallback != null )
+						fireRequestCallback (this, req);
+				}
+			} catch ( System.Exception e ) {
+				Debug.Log ("exception " + e.Message);
+				mat = ForgeLoaderEngine.GetDefaultMaterial ();
+			}
+			return (mat);
+		}
+
 		protected Material CreateMaterial (StandardMaterial lmvMat) {
 			// https://docs.unity3d.com/Manual/StandardShaderMetallicVsSpecular.html
 			// Standard: The shader exposes a “metallic” value that states whether the material is metallic or not.
 			// Standard (Specular setup): Choose this shader for the classic approach. 
 			bool isMetal = lmvMat.isMetal;
-
-			Material mat = new Material ( isMetal ? Shader.Find ("Standard") : Shader.Find ("Standard (Specular setup)"));
-
-			try
-			{
-				//Color properties
+			Material mat = new Material (isMetal ? Shader.Find ("Standard") : Shader.Find ("Standard (Specular setup)"));
+			try {
+				// Color properties
 				Color color = Color.clear;
 				Color diffuse = lmvMat.diffuse;
 				Color ambient = lmvMat.ambient;
@@ -181,40 +255,36 @@ namespace Autodesk.Forge.ARKit {
 
 				color = diffuse != Color.clear ? diffuse : ambient;
 
-				if (color == Color.clear && isMetal)
+				if ( color == Color.clear && isMetal )
 					color = specular;
 
-				mat.SetColor("_Color", color);
+				mat.SetColor ("_Color", color);
 
-				//Metallic properties
-				if (isMetal)
-					mat.SetFloat("_Metallic", 1);
+				// Metallic properties
+				if ( isMetal )
+					mat.SetFloat ("_Metallic", 1);
 
-				//float glossiness = lmvMat.glossiness / 2000;
-				//mat.SetFloat("_Glossiness", glossiness);
-				//mat.SetFloat("_Shininess", glossiness);
+				float glossiness = lmvMat.glossiness / 2000;
+				mat.SetFloat ("_Glossiness", glossiness);
+				mat.SetFloat ("_Shininess", glossiness);
 
-				if (specular != Color.white)
-					mat.SetColor("_SpecColor", color);
+				if ( specular != Color.white )
+					mat.SetColor ("_SpecColor", color);
 
 				var specularTexture = lmvMat.specular_tex;
-				if (specularTexture != null)
-				{
-					mat.EnableKeyword("_SPECULARHIGHLIGHTS_OFF");
-					mat.SetFloat("_SpecularHighlights", 0f);
-					mat.EnableKeyword("_GLOSSYREFLECTIONS_OFF");
-					mat.SetFloat("_GlossyReflections", 0f);
+				if ( specularTexture != null ) {
+					mat.EnableKeyword ("_SPECULARHIGHLIGHTS_OFF");
+					mat.SetFloat ("_SpecularHighlights", 0f);
+					mat.EnableKeyword ("_GLOSSYREFLECTIONS_OFF");
+					mat.SetFloat ("_GlossyReflections", 0f);
+				} else {
+					mat.DisableKeyword ("_SPECULARHIGHLIGHTS_OFF");
+					mat.SetFloat ("_SpecularHighlights", 1f);
+					mat.DisableKeyword ("_GLOSSYREFLECTIONS_OFF");
+					mat.SetFloat ("_GlossyReflections", 1f);
 				}
-				else
-				{
-					mat.DisableKeyword("_SPECULARHIGHLIGHTS_OFF");
-					mat.SetFloat("_SpecularHighlights", 1f);
-					mat.DisableKeyword("_GLOSSYREFLECTIONS_OFF");
-					mat.SetFloat("_GlossyReflections", 1f);
-				}
-				
 
-				//Emissive properties
+				// Emissive properties
 				var emissive = lmvMat.emissive;
 				if ( emissive != Color.clear )
 					mat.SetColor ("_EmissionColor", emissive);
@@ -229,10 +299,9 @@ namespace Autodesk.Forge.ARKit {
 				//)
 				//	mat.SetColor ("_SpecColor", specular);
 
-				//Transparent properties
+				// Transparent properties
 				var transparent = lmvMat.transparent;
-				if ( transparent )
-				{
+				if ( transparent ) {
 					mat.SetFloat ("_Mode", (float)BlendMode.Transparent);
 					mat.EnableKeyword ("_ALPHABLEND_ON");
 					color.a = lmvMat.transparency;

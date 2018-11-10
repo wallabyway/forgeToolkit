@@ -12,6 +12,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Text;
+using System.Linq;
 #if !UNITY_WSA
 using System.Net;
 #elif UNITY_WSA
@@ -22,19 +23,34 @@ using SimpleJSON;
 
 namespace Autodesk.Forge.ARKit {
 
+	public class InstanceTreeData {
+		#region Fields
+		public int dbId { get; set; }
+		public GameObject obj { get; set; }
+		// fragId, materialId, gameObject, jsonNode
+		public List<Eppy.Tuple<int, int, GameObject, JSONNode>> fragments { get; set; }
+
+		#endregion
+
+		public InstanceTreeData (int _dbId, GameObject _obj) {
+			dbId = _dbId;
+			obj = _obj;
+			fragments = new List<Eppy.Tuple<int, int, GameObject, JSONNode>> ();
+		}
+
+	}
+
 	public class InstanceTreeRequest : RequestObjectInterface {
 
 		#region Fields
-		private HashSet<Eppy.Tuple<int, int>> _fragments = new HashSet<Eppy.Tuple<int, int>> ();
-		private HashSet<int> _materials = new HashSet<int> ();
-		private HashSet<int> _properties = new HashSet<int> ();
+		private Dictionary<int, InstanceTreeData> _components = new Dictionary<int, InstanceTreeData> ();
 
 		#endregion
 
 		#region Constructors
 		public InstanceTreeRequest (IForgeLoaderInterface _loader, Uri _uri, string _bearer) : base (_loader, _uri, _bearer) {
 			resolved = SceneLoadingStatus.eInstanceTree;
-			//compression = true;
+			compression = true;
 		}
 
 		#endregion
@@ -44,6 +60,7 @@ namespace Autodesk.Forge.ARKit {
 		public override void FireRequest (Action<object, AsyncCompletedEventArgs> callback = null) {
 			emitted = DateTime.Now;
 			try {
+				System.Net.ServicePointManager.SecurityProtocol = System.Net.SecurityProtocolType.Tls12;
 				using ( client = new WebClient () ) {
 					if ( callback != null ) {
 						if ( compression == true )
@@ -74,6 +91,7 @@ namespace Autodesk.Forge.ARKit {
 		}
 
 		public override IEnumerator _FireRequest_ (Action<object, AsyncCompletedEventArgs> callback =null) {
+			System.Net.ServicePointManager.SecurityProtocol = System.Net.SecurityProtocolType.Tls12;
 			//using ( client =new UnityWebRequest (uri.AbsoluteUri) ) {
 			using ( client =UnityWebRequest.Get (uri.AbsoluteUri) ) {
 				//client.SetRequestHeader ("Connection", "keep-alive") ;
@@ -87,11 +105,11 @@ namespace Autodesk.Forge.ARKit {
 					client.SetRequestHeader ("Accept-Encoding", "gzip, deflate");
 				state =SceneLoadingStatus.ePending ;
 				//client.DownloadStringAsync (uri, this) ;
-				#if UNITY_2017_2_OR_NEWER
+#if UNITY_2017_2_OR_NEWER
 				yield return client.SendWebRequest () ;
-				#else
+#else
 				yield return client.Send () ;
-				#endif
+#endif
 
 				if ( client.isNetworkError || client.isHttpError ) {
 					Debug.Log (ForgeLoader.GetCurrentMethod () + " " + client.error + " - " + client.responseCode) ;
@@ -121,7 +139,7 @@ namespace Autodesk.Forge.ARKit {
 			//TimeSpan tm = DateTime.Now - emitted;
 			//UnityEngine.Debug.Log ("Received: " + tm.TotalSeconds.ToString () + " / " + uri.ToString ());
 			DownloadStringCompletedEventArgs args = e as DownloadStringCompletedEventArgs;
-			string result ="" ;
+			string result = "";
 			if ( args == null ) {
 				DownloadDataCompletedEventArgs args2 = e as DownloadDataCompletedEventArgs;
 				byte [] bytes = args2.Result;
@@ -141,7 +159,7 @@ namespace Autodesk.Forge.ARKit {
 				if ( lmvtkDef == null )
 					state = SceneLoadingStatus.eError;
 				else
-				state = SceneLoadingStatus.eReceived;
+					state = SceneLoadingStatus.eReceived;
 			} catch ( Exception ex ) {
 				Debug.Log (ForgeLoader.GetCurrentMethod () + " " + ex.Message);
 				state = SceneLoadingStatus.eError;
@@ -155,7 +173,7 @@ namespace Autodesk.Forge.ARKit {
 
 		public override GameObject BuildScene (string name, bool saveToDisk = false) {
 			Clear ();
-			GameObject pivot =null;
+			GameObject pivot = null;
 			try {
 				gameObject = new GameObject (name);
 				if ( lmvtkDef == null )
@@ -169,12 +187,75 @@ namespace Autodesk.Forge.ARKit {
 
 				pivot = ForgeLoaderEngine.SetupForSceneOrientationAndUnits (gameObject, properties.Properties);
 
+				// Create as much Meshes requests we need to load chunks of 0.5Mb-0.7Mb pack files
+				// 1-499 polys = factor of 25
+				// >500 poly = factor of 17
+				int compSize = 0;
+				List<Eppy.Tuple<int, int>> components = new List<Eppy.Tuple<int, int>> ();
+				List<Eppy.Tuple<int, int, GameObject, JSONNode>> fragments = new List<Eppy.Tuple<int, int, GameObject, JSONNode>> ();
+				foreach ( KeyValuePair<int, InstanceTreeData> data in _components ) {
+					//if ( data.Value.fragments.Count == 0 )
+					//continue;
+					foreach ( Eppy.Tuple<int, int, GameObject, JSONNode> frag in data.Value.fragments ) {
+						JSONArray json = frag.Item4 ["fragments"].AsArray;
+						JSONArray json2 = frag.Item4 ["fragPolys"].AsArray;
+						int index = 0;
+						for ( ; index < json.Count && json [index].AsInt != frag.Item1 ; index++ ) { }
+						if ( index >= json2.Count )
+							continue;
+						compSize += json2 [index].AsInt;
+						//Debug.Log (data.Key + "-" + frag.Item1 + " " + json2 [index].AsInt);
+						components.Add (new Eppy.Tuple<int, int> (data.Key, frag.Item1));
+						fragments.Add (frag);
+					}
+
+					if ( compSize > 29411 /* 29411 * 17 = 500kb */ ) {
+						MeshesRequest reqMeshes = new MeshesRequest (loader, null, bearer, components, fragments, null);
+						reqMeshes.gameObject = null;
+						if ( fireRequestCallback != null )
+							fireRequestCallback (this, reqMeshes);
+						compSize = 0;
+						components = new List<Eppy.Tuple<int, int>> ();
+						fragments = new List<Eppy.Tuple<int, int, GameObject, JSONNode>> ();
+					}
+				}
+				if ( components.Count > 0 ) {
+					MeshesRequest reqMeshes = new MeshesRequest (loader, null, bearer, components, fragments, null);
+					reqMeshes.gameObject = null;
+					if ( fireRequestCallback != null )
+						fireRequestCallback (this, reqMeshes);
+				}
+
+				if ( loader.GetMgr ()._materials.Count > 0 ) {
+					MaterialsRequest reqMaterials = new MaterialsRequest (loader, null, bearer, loader.GetMgr ()._materials, lmvtkDef);
+					reqMaterials.gameObject = null;
+					if ( fireRequestCallback != null )
+						fireRequestCallback (this, reqMaterials);
+				} // Textures will be requested by the material request (one by one)
+
+				// Now Properties
+				int [] dbIds = _components.Keys.ToArray ();
+				int [] [] chunks = dbIds
+					.Select ((s, i) => new { Value = s, Index = i })
+					.GroupBy (x => x.Index / 100)
+					.Select (grp => grp.Select (x => x.Value).ToArray ())
+					.ToArray ();
+				for ( int i = 0 ; i < chunks.Length ; i++ ) {
+					List<Eppy.Tuple<int, GameObject>> dbIdsTuple = new List<Eppy.Tuple<int, GameObject>> ();
+					foreach ( int dbId in chunks [i] )
+						dbIdsTuple.Add (new Eppy.Tuple<int, GameObject> (dbId, _components [dbId].obj));
+					PropertiesRequest2 reqProps = new PropertiesRequest2 (loader, null, bearer, dbIdsTuple);
+					reqProps.gameObject = null;
+					if ( fireRequestCallback != null )
+						fireRequestCallback (this, reqProps);
+				}
+
 				Clear ();
-			} catch ( Exception /*ex*/ ) {
+			} catch ( Exception ex ) {
 				if ( gameObject )
 					GameObject.DestroyImmediate (gameObject);
-				gameObject =null;
-				pivot =null;
+				gameObject = null;
+				pivot = null;
 			}
 			return (pivot);
 		}
@@ -193,9 +274,7 @@ namespace Autodesk.Forge.ARKit {
 		}
 
 		protected void Clear () {
-			_fragments.Clear ();
-			_materials.Clear ();
-			_properties.Clear ();
+			_components.Clear ();
 		}
 
 		#endregion
@@ -203,67 +282,48 @@ namespace Autodesk.Forge.ARKit {
 		#region Building Instance Tree
 		protected void IteratorNodes (JSONNode node, GameObject go) {
 			GameObject obj = null;
+			int dbId = -1;
 			switch ( node ["type"].Value ) {
 				case "Transform":
-					int dbId0 = node ["id"].AsInt;
-					string nodeName = buildName ("transform", dbId0, 0, node ["pathid"]);
+					dbId = node ["id"].AsInt;
+					string nodeName = buildName ("transform", dbId, 0, node ["pathid"]);
 					obj = new GameObject (nodeName);
 					setTransform (node, obj);
 					obj.transform.parent = go.transform;
 
 					// But requesting properties here does not really make sense and is slowing down the streaming.
 					// Instead, we could get properties on demand or at the end.
-
-					if ( _properties.Add (dbId0) ) {
-						PropertiesRequest req = new PropertiesRequest (loader, null, bearer, dbId0);
-						req.gameObject = obj;
-						if ( fireRequestCallback != null )
-							fireRequestCallback (this, req);
-					}
+					if ( !_components.ContainsKey (dbId) )
+						_components.Add (dbId, new InstanceTreeData (dbId, obj));
 
 					break;
 				case "Mesh":
-					int dbId = node ["id"].AsInt;
+					dbId = node ["id"].AsInt;
+					if ( !_components.ContainsKey (dbId) ) {
+						string nodeName2 = buildName ("transform", dbId, 0, node ["pathid"]);
+						obj = new GameObject (nodeName2);
+						setTransform (node, obj);
+						obj.transform.parent = go.transform;
+						_components.Add (dbId, new InstanceTreeData (dbId, obj));
+						go = obj;
+					} else {
+						go = _components [dbId].obj;
+					}
+
 					for ( int i = 0 ; i < node ["fragments"].AsArray.Count ; i++ ) {
 						int fragId = node ["fragments"] [i].AsInt;
 						int matId = node ["materials"] [i].AsInt;
 						obj = CreateMeshObject (dbId, fragId, node ["pathid"]);
-						setTransform (node, obj);
+						setTransform (node ["fragTransforms"] [i].AsObject, obj);
 						obj.transform.parent = go.transform;
 
-						int polys = node ["fragPolys"] [i].AsInt;
-						if ( polys > 0 ) {
-							// Create a new request to get the Mesh definition
-							if ( _fragments.Add (new Eppy.Tuple<int, int> (dbId, fragId)) ) {
-								MeshRequest req = new MeshRequest (loader, null, bearer, new Eppy.Tuple<int, int> (dbId, fragId), matId, node);
-								req.gameObject = obj;
-								if ( fireRequestCallback != null )
-									fireRequestCallback (this, req);
-							}
+						InstanceTreeData data = _components [dbId];
+						data.fragments.Add (new Eppy.Tuple<int, int, GameObject, JSONNode> (fragId, matId, obj, node));
 
-							// Create a new request to get the Material definition
-							if ( _materials.Add (matId) ) {
-								MaterialRequest req = new MaterialRequest (loader, null, bearer, node ["materials"] [i].AsInt, node);
-								req.gameObject = obj;
-								if ( fireRequestCallback != null )
-									fireRequestCallback (this, req);
-							}
-						}
-
-						// Create a new request to get the properties (but only once), and store it on the parent transform
-
+						loader.GetMgr ()._materials.Add (matId);
 					}
 
-					// But requesting properties here does not really make sense and is slowing down the streaming.
-					// Instead, we could get properties on demand or at the end.
-
-					//if ( _properties.Add (dbId) ) {
-					//	PropertiesRequest req = new PropertiesRequest (loader, null, bearer, dbId);
-					//	req.gameObject = obj.transform.parent.gameObject;
-					//	if ( fireRequestCallback != null )
-					//		fireRequestCallback (this, req);
-					//}
-
+					obj = null; // No childs!
 					break;
 				default:
 					break;

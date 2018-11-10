@@ -48,6 +48,7 @@ namespace Autodesk.Forge.ARKit {
 		public override void FireRequest (Action<object, AsyncCompletedEventArgs> callback = null) {
 			emitted = DateTime.Now;
 			try {
+				System.Net.ServicePointManager.SecurityProtocol = System.Net.SecurityProtocolType.Tls12;
 				using ( client = new WebClient () ) {
 					if ( callback != null ) {
 						if ( compression == true )
@@ -79,6 +80,7 @@ namespace Autodesk.Forge.ARKit {
 
 		public override IEnumerator _FireRequest_ (Action<object, AsyncCompletedEventArgs> callback =null) {
 			//using ( client =new UnityWebRequest (uri.AbsoluteUri) ) {
+			System.Net.ServicePointManager.SecurityProtocol = System.Net.SecurityProtocolType.Tls12;
 			using ( client =UnityWebRequest.Get (uri.AbsoluteUri) ) {
 				//client.SetRequestHeader ("Connection", "keep-alive") ;
 				//client.method =UnityWebRequest.kHttpVerbGET ;
