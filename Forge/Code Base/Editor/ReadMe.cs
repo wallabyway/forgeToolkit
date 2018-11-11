@@ -6,13 +6,13 @@ using System.Text.RegularExpressions;
 using UnityEditor;
 using UnityEngine;
 
-namespace Autodesk.Forge.ForgeToolkit
+namespace Autodesk.ForgeToolkit
 {
 	[InitializeOnLoad]
 	public class ReadMe : EditorWindow
 	{
-		public static readonly string kShowOnStart = "Autodesk.Forge.ForgeToolkit.ShowOnStart";
-		public static readonly string kShownThisSession = "Autodesk.Forge.ForgeToolkit.ShownThisSession";
+		public static readonly string kShowOnStart = "Autodesk.ForgeToolkit.ShowOnStart";
+		public static readonly string kShownThisSession = "Autodesk.ForgeToolkit.ShownThisSession";
 		public static readonly int kShowOnStartCookie = 1;
 
 		GUIStyle _style;
@@ -52,17 +52,17 @@ namespace Autodesk.Forge.ForgeToolkit
 		protected void OnEnable()
 		{
 			titleContent = new GUIContent("About");
-			minSize = new Vector2(640, 320);
+			minSize = new Vector2(800, 600);
 			maxSize = new Vector2(1280, 960);
 
 			try
 			{
-				_text = ParseMarkdown("Assets/Forge/ReadMe.md");
+				_text = ParseMarkdown("Assets/Forge/README.md");
 			}
 			catch (Exception e)
 			{
 				Debug.LogException(e);
-				_text = "No ReadMe file found at Assets/Forge/ReadMe.md.\n" + e.Message;
+				_text = e.Message;
 			}
 		}
 
