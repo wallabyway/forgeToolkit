@@ -24,7 +24,7 @@ using UnityEngine.Networking;
 using UnityEngine;
 
 
-namespace Autodesk.Forge.ARKit {
+namespace Autodesk.Forge.ForgeToolkit {
 
 	public class RestClient {
 

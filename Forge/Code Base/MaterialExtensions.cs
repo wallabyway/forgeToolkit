@@ -10,7 +10,7 @@
 using UnityEngine;
 
 
-namespace Autodesk.Forge.ARKit {
+namespace Autodesk.Forge.ForgeToolkit {
 
 	public static class MaterialExtensions {
 

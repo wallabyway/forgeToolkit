@@ -10,7 +10,7 @@
 using UnityEngine;
 //using HoloToolkit.Unity;
 
-namespace Autodesk.Forge.ARKit {
+namespace Autodesk.Forge.ForgeToolkit {
 
 	public class BillBoardFollow : MonoBehaviour {
 

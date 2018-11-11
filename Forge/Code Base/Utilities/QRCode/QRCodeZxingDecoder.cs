@@ -18,7 +18,7 @@ using ZXing.Common;
 using ZXing.QrCode;
 #endif
 
-namespace Autodesk.Forge.ARKit {
+namespace Autodesk.Forge.ForgeToolkit {
 
 	public partial class QRCodeZxingDecoder :  QRCodeDecoderBase {
 

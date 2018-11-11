@@ -28,7 +28,7 @@ using UnityEngine.VR.WSA.WebCam;
 using SimpleJSON;
 
 
-namespace Autodesk.Forge.ARKit {
+namespace Autodesk.Forge.ForgeToolkit {
 
 	public abstract class QRCodeDecoderBase : MonoBehaviour, IQRCodeDecoderInterface	{
 

@@ -11,7 +11,7 @@ using UnityEngine;
 using UnityEngine.Events;
 
 
-namespace Autodesk.Forge.ARKit {
+namespace Autodesk.Forge.ForgeToolkit {
 
 	[System.Serializable]
 	public class QRDecodedEvent : UnityEvent<string, Vector3, Quaternion> {

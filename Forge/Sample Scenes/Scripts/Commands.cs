@@ -18,7 +18,7 @@ using System.Net;
 using SimpleJSON;
 
 
-namespace Autodesk.Forge.ARKit {
+namespace Autodesk.Forge.ForgeToolkit {
 
 	public class Commands : MonoBehaviour {
 
@@ -51,7 +51,7 @@ namespace Autodesk.Forge.ARKit {
 						return ;
 					if ( args.Error != null ) {
 						UnityMainThreadDispatcher.Instance ().Enqueue (() => {
-							Debug.Log (Autodesk.Forge.ARKit.ForgeLoader.GetCurrentMethod () + " " + args.Error.Message) ;
+							Debug.Log (Autodesk.Forge.ForgeToolkit.ForgeLoader.GetCurrentMethod () + " " + args.Error.Message) ;
 						}) ;
 						return ;
 					}

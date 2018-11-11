@@ -20,7 +20,7 @@ using System.Net;
 using SimpleJSON;
 
 
-namespace Autodesk.Forge.ARKit {
+namespace Autodesk.Forge.ForgeToolkit {
 
 	public class TextureRequest : RequestObjectInterface {
 

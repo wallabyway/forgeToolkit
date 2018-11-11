@@ -14,7 +14,7 @@ using UnityEditor;
 using SimpleJSON;
 
 
-namespace Autodesk.Forge.ARKit {
+namespace Autodesk.Forge.ForgeToolkit {
 
 	[System.Serializable]
 	public class OauthCredentialsReceived : UnityEvent<string> {

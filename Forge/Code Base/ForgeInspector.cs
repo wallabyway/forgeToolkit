@@ -20,7 +20,7 @@ using UnityEngine.EventSystems;
 #endif
 
 
-namespace Autodesk.Forge.ARKit {
+namespace Autodesk.Forge.ForgeToolkit {
 
 	#if FORGE_HUX
 	using __InteractionReceiver__ =InteractionReceiver ;

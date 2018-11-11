@@ -19,7 +19,7 @@ using System.Net;
 using SimpleJSON;
 
 
-namespace Autodesk.Forge.ARKit {
+namespace Autodesk.Forge.ForgeToolkit {
 
 	[System.Serializable]
 	[System.Obsolete("Deprecated, use oAuthCredentialsReceived instead", true)]

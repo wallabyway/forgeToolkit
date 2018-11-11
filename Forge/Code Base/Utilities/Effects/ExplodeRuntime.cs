@@ -11,7 +11,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace Autodesk.Forge.ARKit {
+namespace Autodesk.Forge.ForgeToolkit {
 
 	// RenderScene.js #467
 	public class ExplodeRuntime {

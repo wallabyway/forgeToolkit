@@ -19,7 +19,7 @@ using UnityEngine.VR.WSA.WebCam;
 #endif
 
 
-namespace Autodesk.Forge.ARKit {
+namespace Autodesk.Forge.ForgeToolkit {
 
 #if !UNITY_EDITOR && UNITY_WSA
 	public partial class QRCodeZxingWebDecoder : QRCodeDecoderBase {

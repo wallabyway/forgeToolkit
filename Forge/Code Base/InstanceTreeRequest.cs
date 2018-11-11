@@ -21,7 +21,7 @@ using UnityEngine.Networking;
 using UnityEngine;
 using SimpleJSON;
 
-namespace Autodesk.Forge.ARKit {
+namespace Autodesk.Forge.ForgeToolkit {
 
 	public class InstanceTreeData {
 		#region Fields

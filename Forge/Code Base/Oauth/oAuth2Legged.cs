@@ -22,7 +22,7 @@ using UnityEngine.Networking;
 using UnityEngine;
 
 
-namespace Autodesk.Forge.ARKit {
+namespace Autodesk.Forge.ForgeToolkit {
 
 	[System.Obsolete ("Deprecated, will be removed in future", true)]
 	public class oAuth2Legged {

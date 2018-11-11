@@ -8,7 +8,7 @@
 // the prior written consent of Autodesk, Inc.
 //
 
-namespace Autodesk.Forge.ARKit {
+namespace Autodesk.Forge.ForgeToolkit {
 
 	public abstract class ForgeLoaderConstants {
 

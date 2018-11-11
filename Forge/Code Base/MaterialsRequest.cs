@@ -25,7 +25,7 @@ using UnityEditor;
 using SimpleJSON;
 
 
-namespace Autodesk.Forge.ARKit {
+namespace Autodesk.Forge.ForgeToolkit {
 
 	// Only works with the v2 server using the v1 API
 	public class MaterialsRequest : RequestObjectInterface {

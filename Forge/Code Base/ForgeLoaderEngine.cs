@@ -20,7 +20,7 @@ using UnityEngine;
 using SimpleJSON;
 
 
-namespace Autodesk.Forge.ARKit {
+namespace Autodesk.Forge.ForgeToolkit {
 
 	public enum LODLevels {
 		Full = 0,

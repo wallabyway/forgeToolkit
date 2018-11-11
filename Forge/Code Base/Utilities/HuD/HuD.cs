@@ -19,7 +19,7 @@ using UnityEditor;
 
 // http://heliosinteractive.com/scaling-ui-hololens/
 
-namespace Autodesk.Forge.ARKit {
+namespace Autodesk.Forge.ForgeToolkit {
 
 	public class HuD : MonoBehaviour {
 

@@ -13,7 +13,7 @@ using UnityEngine;
 using UnityEditor;
 using SimpleJSON;
 
-namespace Autodesk.Forge.ARKit {
+namespace Autodesk.Forge.ForgeToolkit {
 
 	[CustomEditor (typeof(ForgeProperties))]
 	public class ForgePropertiesEditor : Editor {

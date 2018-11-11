@@ -12,7 +12,7 @@ using UnityEngine;
 using UnityEditor;
 #endif
 
-namespace Autodesk.Forge.ARKit {
+namespace Autodesk.Forge.ForgeToolkit {
 
 	public class MakeChildrenInteractible : EditorWindow {
 

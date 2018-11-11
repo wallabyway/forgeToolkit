@@ -31,7 +31,7 @@ using Unity.IO.Compression;
 //#endif
 
 
-namespace Autodesk.Forge.ARKit {
+namespace Autodesk.Forge.ForgeToolkit {
 
 	#region Enums
 	public enum SceneLoadingStatus {
